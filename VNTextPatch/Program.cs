@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using VNTextPatch.Shared;
 using VNTextPatch.Shared.Scripts;
+using VNTextPatch.Shared.Scripts.Kirikiri;
 using VNTextPatch.Shared.Util;
 
 namespace VNTextPatch
@@ -50,12 +51,26 @@ namespace VNTextPatch
             }
         }
 
+
         private static void ExtractLocal(string[] args, Options options)
         {
             if (args.Length != 3)
             {
                 PrintUsage();
                 return;
+            }
+
+            if (!string.IsNullOrEmpty(options.Lang))
+            {
+                if (int.TryParse(options.Lang, out int langIndex))
+                {
+                    KirikiriScnScript.SetLanguageIndex(langIndex);
+                }
+                else
+                {
+                    Console.WriteLine($"Invalid language index: {options.Lang}. Use 0 for JP, 1 for EN, 2 For CN");
+                    return;
+                }
             }
 
             string inputPath = Path.GetFullPath(args[1]);
@@ -278,6 +293,7 @@ namespace VNTextPatch
 
         private class Options
         {
+            public string Lang { get; set; }
             public static Options Parse(string[] args, out string[] unnamedArgs)
             {
                 Options options = new Options();
@@ -297,6 +313,9 @@ namespace VNTextPatch
                     {
                         case "format":
                             options.Format = value;
+                            break;
+                        case "lang":
+                            options.Lang = value;
                             break;
                     }
                 }
