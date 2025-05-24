@@ -9,7 +9,12 @@ namespace VNTextPatch.Shared.Scripts.Kirikiri
 {
     public class KirikiriScnScript : IScript
     {
-        private const int LanguageIndex = 0;
+        private static int LanguageIndex = 0;
+
+        public static void SetLanguageIndex(int index)
+        {
+            LanguageIndex = index;
+        }
 
         private static readonly Regex ControlCodeRegex = new Regex(
           @"    \\.        # Escape sequence
@@ -62,7 +67,20 @@ namespace VNTextPatch.Shared.Scripts.Kirikiri
                 {
                     if (str.Type == ScriptStringType.Message)
                     {
-                        psb.Text.Value = ProportionalWordWrapper.Default.Wrap(StringUtil.FancifyQuotes(str.Text, ControlCodeRegex), ControlCodeRegex, "\\n");
+                        
+                        psb.Text.Value = ManualWrap(
+                            StringUtil.FancifyQuotes(str.Text, ControlCodeRegex),
+                            56
+                        );
+                        
+                        /*
+                        psb.Text.Value = ProportionalWordWrapper.Default.Wrap(
+                        StringUtil.FancifyQuotes(str.Text, ControlCodeRegex),
+                        ControlCodeRegex,
+                         "\\n"
+                         );*/
+
+
                     }
                     else
                     {
