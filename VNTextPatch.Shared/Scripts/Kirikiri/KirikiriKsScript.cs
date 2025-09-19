@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,7 +9,7 @@ namespace VNTextPatch.Shared.Scripts.Kirikiri
 {
     public class KirikiriKsScript : PlainTextScript
     {
-        private static readonly Regex LineCommandRegex   = new Regex(@"^\s*@(?<command>[^ ]+)(?: +(?<attrname>[^= ]+)(?: *= *(?<attrvalue>""(?:\\""|[^""])*""|'(?:\\'|[^'])*'|[^""' ]*))?)*", RegexOptions.Compiled);
+        private static readonly Regex LineCommandRegex = new Regex(@"^\s*@(?<command>[^ ]+)(?: +(?<attrname>[^= ]+)(?: *= *(?<attrvalue>""(?:\\""|[^""])*""|'(?:\\'|[^'])*'|[^""' ]*))?)*", RegexOptions.Compiled);
         private static readonly Regex InlineCommandRegex = new Regex(@"\[(?<command>[^\]' ]+)(?: +(?<attrname>[^\]= ]+)(?: *= *(?<attrvalue>""(?:\\""|[^""])*""|'(?:\\'|[^'])*'|[^\]""' ]*))?)* *\]", RegexOptions.Compiled);
 
         private static readonly Regex PlainRubyRegex = new Regex(@"\[(?<text>[^/\]]+?)/(?<ruby>[^\]]+?)\]", RegexOptions.Compiled);
@@ -155,7 +155,7 @@ namespace VNTextPatch.Shared.Scripts.Kirikiri
 
                 if (commandName.StartsWith("【") && commandName.EndsWith("】"))
                     yield return new Range(lineOffset + commandMatch.Groups["command"].Index + 1, commandName.Length - 2, ScriptStringType.CharacterName);
-                
+
                 if (NameCommands.Contains(commandName) || (commandName.StartsWith("【") && commandName.EndsWith("】")))
                 {
                     foreach (Range range in GetAttributeValueRanges(lineOffset, commandMatch, ScriptStringType.CharacterName))
@@ -218,12 +218,37 @@ namespace VNTextPatch.Shared.Scripts.Kirikiri
         protected override string GetTextForRead(Range range)
         {
             string text = base.GetTextForRead(range);
-            text = text.Replace("\r\n", "");
+            text = text.Replace("\r\n", " ");
             text = text.Replace("@r", "\r\n");
             text = ConvertKirikiriRubyToPlain(text);
             text = text.Replace("[l]", "|");
-            text = text.Replace("[r]", "\r\n");
+            text = text.Replace("[r]", "");
             return text;
+        }
+        private static string ManualWrap(string text, int maxLineLength)
+        {
+            List<string> lines = new List<string>();
+            string[] words = text.Split(' ');
+
+            string currentLine = "";
+
+            foreach (string word in words)
+            {
+                if ((currentLine + word).Length + 1 <= maxLineLength)
+                {
+                    currentLine += (currentLine.Length == 0 ? "" : " ") + word;
+                }
+                else
+                {
+                    lines.Add(currentLine);
+                    currentLine = word;
+                }
+            }
+
+            if (currentLine.Length > 0)
+                lines.Add(currentLine);
+
+            return string.Join("[r]\r\n", lines);
         }
 
         protected override string GetTextForWrite(Range range, ScriptString str)
@@ -235,8 +260,8 @@ namespace VNTextPatch.Shared.Scripts.Kirikiri
             if (StringUtil.ContainsJapaneseText(text))
                 text = PlainRubyRegex.Replace(text, ConvertPlainRubyToKirikiri);
 
-            text = ProportionalWordWrapper.Default.Wrap(text);
-            text = text.Replace("\r\n", "[r]\r\n");
+            text = ManualWrap(text, 49);
+            text = text.Replace("\r\n", "");
             return text;
         }
 
